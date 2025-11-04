@@ -1,0 +1,36 @@
+name: Enforce Folder Structure
+
+on: [push, pull_request]
+
+jobs:
+  check-folders:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if unexpected top-level folders exist
+        run: |
+          # Danh sách thư mục được phép (có thể thêm nếu cần)
+          allowed=("GD1" "GD2" "Lab1" "Lab2" "Lab3" "Lab4" "Lab5" "Lab6" "Lab7" "Lab8" \
+                   "Slide1" "Slide2" "Slide3" "Slide4" "Slide5" "Slide6" "Slide7" "Slide8" ".github")
+
+          # Lấy danh sách thư mục gốc thực tế
+          mapfile -t roots < <(find . -maxdepth 1 -type d -printf "%f\n" | sort)
+
+          bad=()
+          for d in "${roots[@]}"; do
+            [[ "$d" == "." || "$d" == ".git" ]] && continue
+            ok=false
+            for a in "${allowed[@]}"; do
+              [[ "$d" == "$a" ]] && ok=true
+            done
+            $ok || bad+=("$d")
+          done
+
+          if (( ${#bad[@]} > 0 )); then
+            echo "::error::Không được tạo thư mục gốc ngoài danh sách cho phép. Phát hiện: ${bad[*]}"
+            exit 1
+          else
+            echo "✅ Cấu trúc thư mục hợp lệ."
+          fi
+
+
