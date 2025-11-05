@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Bootstrap 5</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- <link rel="stylesheet" href="css/bootstrap.min.css"> -->
+    
+    <!-- <script src="js/bootstrap.bundle.min.js"></script> -->
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <div class="container bg-primary">
+        <h1 class="text-center">Ví dụ Bootstrap</h1>
+        <p>Chào mừng đến với Bootstrap 5</p>
+    </div>
+
+    <div class="container-fluid bg-success">
+        <h1 class="text-center">Ví dụ Bootstrap</h1>
+        <p>Chào mừng đến với Bootstrap 5</p>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-4 bg-danger text-white">Cột 1</div>
+            <div class="col-sm-4 bg-warning text-white">
+                Cột 2
+                <!-- Nested rows should be inside a column -->
+                <div class="row mt-2">
+                    <div class="col-6">Cột 2.1</div>
+                    <div class="col-6">
+                        Cột 2.2
+                        <div class="row mt-2">
+                            <div class="col-4 bg-secondary text-white">Cột 2.2.1</div>
+                            <div class="col-8 bg-dark text-white">Cột 2.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4 bg-info text-white">Cột 3</div>
+        </div>
+    </div>
+
+</body>
+</html>
