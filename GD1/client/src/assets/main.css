@@ -1,0 +1,56 @@
+:root {
+  /* Fahasa Color Palette */
+  --color-primary: #C92127; /* Màu đỏ thương hiệu */
+  --color-price: #C92127;   /* Màu giá tiền */
+  --color-text: #333333;
+  --color-bg: #F0F0F0;      /* Nền xám nhạt đặc trưng của TMĐT */
+  --color-white: #FFFFFF;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Các class tiện ích giả lập Fahasa */
+.bg-white-rounded {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.text-price {
+  color: var(--color-price);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.btn-fahasa {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-fahasa:hover {
+  background-color: #a81a1f;
+  color: white;
+}
+
+/* Hiệu ứng hover cho thẻ sách */
+.product-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
