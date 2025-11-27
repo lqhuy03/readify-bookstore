@@ -25,7 +25,6 @@ function submitPost() {
     };
     emit('add-post', newPost);
     
-    // Reset fields
     title.value = '';
     content.value = '';
     author.value = '';

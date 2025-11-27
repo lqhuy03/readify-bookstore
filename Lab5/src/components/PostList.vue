@@ -15,6 +15,7 @@
 </template>
 
 <script setup>
+
 defineProps({
   posts: {
     type: Array,
