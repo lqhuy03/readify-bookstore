@@ -16,6 +16,7 @@
       </div>
     </form>
 
+    <!-- Form -->
     <div class="info-display mt-4 p-3 bg-dark text-white rounded">
       <h2>Thông tin đã nhập:</h2>
       <p><strong>Họ và Tên:</strong> {{ userInfo.name }}</p>
