@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2>Danh sách bài viết</h2>
-    <div 
+    <!-- <div 
       v-for="(post, index) in posts" 
       :key="index" 
       :class="{ 'highlighted': post.title.length > 20 }" 
@@ -10,8 +10,33 @@
       <h3 class="text-success">{{ post.title }}</h3>
       <h4 class="text-danger">{{ post.author }}</h4>
       <p>{{ post.content }}</p>
-    </div>
+    </div> -->
+    <table class="table table-bordered table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Tiêu đề</th>
+                <th>Tác giả</th>
+                <th>Nội dung</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr 
+                v-for="(post, index) in posts" 
+                :key="index"
+                
+                :class="{ 'highlighted': post.title.length > 20 }"
+                
+                :style="{ backgroundColor: post.backgroundColor, color: post.textColor }"
+            >   <td>{{ index + 1 }}</td>
+                <td>{{ post.title }}</td>
+                <td>{{ post.author }}</td>
+                <td>{{ post.content }}</td>
+            </tr>
+        </tbody>
+    </table>
   </div>
+  
 </template>
 
 <script setup>
