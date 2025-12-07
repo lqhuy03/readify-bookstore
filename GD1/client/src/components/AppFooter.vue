@@ -35,8 +35,11 @@
             <li><a href="#" class="text-decoration-none text-secondary hover-link">Phương thức thanh toán</a></li>
           </ul>
           <div class="mt-3 d-flex gap-2">
-            <img src="https://cdn0.fahasa.com/skin/frontend/ma_vanese/fahasa/images/vnpost.png" height="30" alt="Ship">
-            <img src="https://cdn0.fahasa.com/skin/frontend/ma_vanese/fahasa/images/ahamove.png" height="30" alt="Ship">
+           <div class="d-flex gap-3 fs-4 text-secondary">
+            <i class="bi bi-truck" title="Vận chuyển"></i>
+            <i class="bi bi-box-seam" title="Giao hàng"></i>
+            <i class="bi bi-credit-card" title="Thanh toán"></i>
+          </div>
           </div>
         </div>
       </div>

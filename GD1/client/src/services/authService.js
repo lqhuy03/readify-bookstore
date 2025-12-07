@@ -1,4 +1,4 @@
-import { auth } from '../firebase'; // Import từ file config firebase.js
+import { auth } from '@/firebase';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -7,43 +7,25 @@ import {
 } from 'firebase/auth';
 
 export default {
-  // 1. Đăng ký tài khoản mới
-  async register({ email, password, fullName }) {
-    try {
-      // Tạo user trên Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      
-      // Cập nhật tên hiển thị (DisplayName)
-      await updateProfile(user, { displayName: fullName });
-      
-      return user;
-    } catch (error) {
-      throw error;
+  async register({ email, password, name }) {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    // Cập nhật tên hiển thị
+    if (name) {
+      await updateProfile(userCredential.user, { displayName: name });
     }
+    return userCredential.user;
   },
 
-  // 2. Đăng nhập
   async login({ email, password }) {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
-    } catch (error) {
-      throw error;
-    }
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
   },
 
-  // 3. Đăng xuất
   async logout() {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      throw error;
-    }
+    await signOut(auth);
   },
   
-  // 4. Lấy user hiện tại
-  getCurrentUser() {
+  getUser() {
     return auth.currentUser;
   }
 };

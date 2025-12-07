@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -11,6 +12,11 @@ const router = createRouter({
     { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue') },
     // Admin Route
     { path: '/admin/products', name: 'admin-products', component: () => import('../views/admin/ProductManageView.vue') },
+    { 
+      path: '/profile', 
+      name: 'profile', 
+      component: () => import('../views/ProfileView.vue') 
+    },
   ]
 })
 

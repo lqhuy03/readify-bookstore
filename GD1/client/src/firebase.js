@@ -1,27 +1,25 @@
 // src/firebase.js
-
-// 1. Import các hàm cần thiết từ thư viện Firebase
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";       // Dùng cho Đăng nhập/Đăng ký
-import { getFirestore } from "firebase/firestore"; // Dùng cho Database (Sách, Đơn hàng)
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; // 1. Import thêm Firestore
 
-// Your web app's Firebase configuration
+// Cấu hình đầy đủ (Tôi đã điền giúp bạn các mã còn thiếu từ ảnh bạn gửi)
 const firebaseConfig = {
   apiKey: "AIzaSyBQxAyMdvPhlOSFwdkVU8QP_B026hoy2FQ",
   authDomain: "readify-bookstore.firebaseapp.com",
-  databaseURL: "https://readify-bookstore-default-rtdb.firebaseio.com",
+  databaseURL: "https://readify-bookstore-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "readify-bookstore",
   storageBucket: "readify-bookstore.firebasestorage.app",
-  messagingSenderId: "494832236296",
+  messagingSenderId: "494832236296", 
   appId: "1:494832236296:web:38edfeaafb30c45900debd"
 };
 
-// Initialize Firebase
+// Khởi tạo Firebase App
 const app = initializeApp(firebaseConfig);
 
-// 4. Khởi tạo các dịch vụ con
-const auth = getAuth(app);      // Dịch vụ xác thực
-const db = getFirestore(app);   // Dịch vụ cơ sở dữ liệu
+// Khởi tạo các dịch vụ
+const auth = getAuth(app);
+const db = getFirestore(app); // 2. Khởi tạo biến db cho Firestore
 
-// 5. Xuất ra (Export) để các file khác (như Login.vue, Home.vue) có thể dùng
+// 3. Xuất khẩu cả 2 biến ra ngoài để main.js sử dụng
 export { auth, db };

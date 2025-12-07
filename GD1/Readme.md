@@ -152,9 +152,9 @@ Trang Quản Trị (Admin)
 🤝 Tác Giả
  
 
-Họ và tên: [Tên Của Bạn]
-Mã sinh viên: [Mã SV Của Bạn]
-Email: [Email Của Bạn]
+Họ và tên: Lê Quang Huy
+Mã sinh viên: PS43393
+Email: huy30987@gmail.com
 Dự án: Assignment Môn SOF308 - FPT Polytechnic
 
 Made with ❤️ and Vue.js

@@ -62,6 +62,7 @@
       <RouterLink to="/shop" class="text-decoration-none text-primary" style="font-size: 14px;">Xem tất cả ></RouterLink>
     </div>
     
+    <div class="container mt-4 bg-white-rounded">
     <div class="row row-cols-2 row-cols-md-5 g-3">
       <div class="col" v-for="book in books" :key="book.id">
         <RouterLink :to="'/product/' + book.id" class="text-decoration-none text-dark">
@@ -69,6 +70,7 @@
         </RouterLink>
       </div>
     </div>
+  </div>
   </div>
 </template>
 
@@ -87,11 +89,11 @@ const categories = [
 ];
 
 const books = ref([
-  { id: 1, title: 'Cây Cam Ngọt Của Tôi', price: 96000, image: 'https://cdn0.fahasa.com/media/catalog/product/i/m/image_195509_1_36793.jpg' },
-  { id: 2, title: 'Nhà Giả Kim', price: 63000, image: 'https://cdn0.fahasa.com/media/catalog/product/n/h/nha_gia_kim_2020_1.jpg' },
-  { id: 3, title: 'Đắc Nhân Tâm (Khổ Lớn)', price: 77000, image: 'https://cdn0.fahasa.com/media/catalog/product/8/9/8935086857732.jpg' },
-  { id: 4, title: 'Tuổi Trẻ Đáng Giá Bao Nhiêu', price: 80000, image: 'https://cdn0.fahasa.com/media/catalog/product/t/u/tuoi-tre-dang-gia-bao-nhieu-u500.jpg' },
-  { id: 5, title: 'Hành Trình Về Phương Đông', price: 110000, image: 'https://cdn0.fahasa.com/media/catalog/product/i/m/image_240890.jpg' },
+  { id: 1, title: 'Cây Cam Ngọt Của Tôi', price: 96000, image: '../assets/images/book-1.jpg' },
+  { id: 2, title: 'Nhà Giả Kim', price: 63000, image: '/images/book-2.jpg' },
+  { id: 3, title: 'Đắc Nhân Tâm', price: 77000, image: '/images/book-3.jpg' },
+  { id: 4, title: 'Tuổi Trẻ Đáng Giá Bao Nhiêu', price: 80000, image: '/images/book-4.jpg' },
+  { id: 5, title: 'Hành Trình Về Phương Đông', price: 110000, image: '/images/book-5.jpg' },
 ]);
 </script>
 
