@@ -3,22 +3,30 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
+import Swal from 'sweetalert2';
 
-// 1. Khởi tạo Store và Router
 const router = useRouter();
 const authStore = useAuthStore();
 const cartStore = useCartStore();
 
-// 2. Lấy dữ liệu từ Store (Dùng computed để tự động cập nhật)
 const user = computed(() => authStore.user);
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const cartCount = computed(() => cartStore.totalItems);
 const isAdmin = computed(() => authStore.isAdmin);
 
-// 3. Xử lý Đăng xuất
 const handleLogout = async () => {
-  await authStore.logout();
-  router.push('/login');
+  const result = await Swal.fire({
+    title: 'Đăng xuất?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#C92127',
+    confirmButtonText: 'Đăng xuất'
+  });
+
+  if (result.isConfirmed) {
+    await authStore.logout();
+    router.push('/login');
+  }
 };
 </script>
 
@@ -27,57 +35,63 @@ const handleLogout = async () => {
     <div class="container py-3">
       <div class="row align-items-center">
         
-        <div class="col-md-3">
+        <div class="col-md-2">
           <RouterLink class="text-decoration-none" to="/">
-            <h2 class="m-0 fw-bold" style="color: #C92127; letter-spacing: -1px;">
+            <h2 class="m-0 fw-bold d-flex align-items-center" style="color: #C92127; letter-spacing: -1px; font-size: 1.5rem;">
               READIFY
-              <i class="bi bi-book-half"></i>
+              <i class="bi bi-book-half ms-1"></i>
             </h2>
           </RouterLink>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-5">
           <div class="input-group">
-            <input type="text" class="form-control border-end-0 rounded-start-pill ps-4" placeholder="Tìm kiếm tựa sách, tác giả...">
-            <span class="input-group-text bg-white border-start-0">
-              <i class="bi bi-search text-muted"></i>
-            </span>
-            <button class="btn btn-fahasa rounded-end-pill px-4">Tìm kiếm</button>
+            <input type="text" class="form-control border-end-0 rounded-start-pill ps-4" placeholder="Tìm sách...">
+            <button class="btn btn-fahasa rounded-end-pill px-3">
+              <i class="bi bi-search"></i>
+            </button>
           </div>
         </div>
 
-        <div class="col-md-3">
-          <div class="d-flex justify-content-end gap-4 align-items-center">
+        <div class="col-md-5">
+          <div class="d-flex justify-content-end align-items-center gap-3">
             
-            <div class="text-center cursor-pointer text-secondary position-relative">
-              <i class="bi bi-bell fs-4"></i>
-              <div style="font-size: 12px;">Thông báo</div>
+            <RouterLink v-if="isAdmin" to="/admin/products" class="btn btn-dark btn-sm fw-bold shadow-sm d-flex align-items-center">
+              <i class="bi bi-shield-lock-fill me-2"></i> Quản Trị Viên
+            </RouterLink>
+
+            <div class="border-end h-100 mx-1" style="height: 24px;"></div>
+            
+            <div class="text-center cursor-pointer text-secondary hover-red position-relative">
+              <i class="bi bi-bell fs-5"></i>
+              <div class="small-text">Thông báo</div>
             </div>
 
-            <RouterLink to="/cart" class="text-decoration-none text-secondary text-center position-relative">
-              <i class="bi bi-cart3 fs-4"></i>
+            <RouterLink to="/cart" class="text-decoration-none text-secondary text-center hover-red position-relative">
+              <i class="bi bi-cart3 fs-5"></i>
               <span v-if="cartCount > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
                 {{ cartCount }}
               </span>
-              <div style="font-size: 12px;">Giỏ hàng</div>
+              <div class="small-text">Giỏ hàng</div>
             </RouterLink>
 
-            <div v-if="isAuthenticated" class="dropdown text-center">
-              <div class="cursor-pointer text-secondary" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-person-check-fill fs-4 text-success"></i>
-                <div style="font-size: 12px; max-width: 80px;" class="text-truncate">
-                  {{ user?.displayName || 'Tài khoản' }}
+            <div v-if="isAuthenticated" class="dropdown text-center ms-2">
+              <div class="cursor-pointer text-secondary d-flex flex-column align-items-center hover-red" data-bs-toggle="dropdown">
+                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-danger fw-bold" 
+                     style="width: 32px; height: 32px;">
+                  {{ user?.displayName?.charAt(0).toUpperCase() || 'U' }}
                 </div>
               </div>
-              <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+
+              <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2">
+                <li>
+                  <div class="px-3 py-2 bg-light border-bottom mb-2">
+                    <p class="mb-0 fw-bold text-dark text-truncate">{{ user?.displayName }}</p>
+                  </div>
+                </li>
                 <li>
                   <RouterLink class="dropdown-item" to="/profile">
-                    <i class="bi bi-person me-2"></i> Hồ sơ cá nhân
-                  </RouterLink>
-                </li>
-                <li v-if="isAdmin">
-                  <RouterLink class="dropdown-item" to="/admin/products">
-                    <i class="bi bi-speedometer2 me-2"></i> Quản trị Website
+                    <i class="bi bi-person-gear me-2"></i> Hồ sơ cá nhân
                   </RouterLink>
                 </li>
                 <li><hr class="dropdown-divider"></li>
@@ -89,9 +103,9 @@ const handleLogout = async () => {
               </ul>
             </div>
 
-            <RouterLink v-else to="/login" class="text-decoration-none text-secondary text-center">
-              <i class="bi bi-person-circle fs-4"></i>
-              <div style="font-size: 12px;">Đăng nhập</div>
+            <RouterLink v-else to="/login" class="text-decoration-none text-secondary text-center hover-red ms-2">
+              <i class="bi bi-person-circle fs-5"></i>
+              <div class="small-text">Đăng nhập</div>
             </RouterLink>
 
           </div>
@@ -104,14 +118,8 @@ const handleLogout = async () => {
 
 <style scoped>
 .cursor-pointer { cursor: pointer; }
-.btn-fahasa {
-  background-color: #C92127;
-  color: white;
-  border: none;
-  font-weight: 600;
-}
-.btn-fahasa:hover {
-  background-color: #a81a1f;
-  color: white;
-}
+.hover-red:hover, .hover-red:hover i { color: #C92127 !important; transition: color 0.2s; }
+.btn-fahasa { background-color: #C92127; color: white; border: none; font-weight: 600; }
+.btn-fahasa:hover { background-color: #a81a1f; color: white; }
+.small-text { font-size: 11px; margin-top: -2px; }
 </style>

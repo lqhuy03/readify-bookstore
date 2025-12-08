@@ -1,9 +1,11 @@
 <template>
+  <AdminNav /> <div class="container mt-4 mb-5">
+     </div>
   <div class="container mt-4 mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
         <h4 class="fw-bold mb-1 text-uppercase" style="color: #C92127;">Quản Lý Sản Phẩm</h4>
-        <p class="text-muted small mb-0">Quản lý danh sách sách, kho hàng và giá cả trên hệ thống.</p>
+        <p class="text-muted small mb-0">Quản lý danh sách sách, kho hàng và thiết lập giảm giá.</p>
       </div>
       <button class="btn btn-fahasa text-white shadow-sm" @click="openAddModal" data-bs-toggle="modal" data-bs-target="#bookModal">
         <i class="bi bi-plus-lg me-1"></i> Thêm Sách Mới
@@ -54,10 +56,10 @@
             <thead class="bg-light text-secondary">
               <tr>
                 <th class="ps-4 py-3">Sản phẩm</th>
-                <th>Danh mục</th>
+                <th>Giá gốc</th>
+                <th>Giảm giá</th>
                 <th>Giá bán</th>
                 <th>Tồn kho</th>
-                <th>Trạng thái</th>
                 <th class="text-end pe-4">Hành động</th>
               </tr>
             </thead>
@@ -79,22 +81,30 @@
                          style="object-fit: cover;"
                          @error="$event.target.src='https://placehold.co/48x64?text=No+Img'">
                     <div>
-                      <div class="fw-bold text-dark text-truncate" style="max-width: 220px;">{{ book.title }}</div>
-                      <small class="text-muted">ID: {{ book.id.substring(0, 6) }}...</small>
+                      <div class="fw-bold text-dark text-truncate" style="max-width: 200px;">{{ book.title }}</div>
+                      <small class="text-muted">{{ book.category }}</small>
                     </div>
                   </div>
                 </td>
-                <td><span class="badge bg-light text-dark border">{{ book.category }}</span></td>
-                <td>
-                   <div class="fw-bold text-danger">{{ formatPrice(book.price) }}</div>
-                   <small class="text-decoration-line-through text-muted" v-if="book.originalPrice > book.price">
-                     {{ formatPrice(book.originalPrice) }}
-                   </small>
+                
+                <td class="text-muted text-decoration-line-through">
+                  {{ formatPrice(book.originalPrice) }}
                 </td>
-                <td>{{ book.stock }}</td>
+
+                <td>
+                  <span v-if="book.originalPrice > book.price" class="badge bg-danger">
+                    -{{ Math.round((1 - book.price/book.originalPrice)*100) }}%
+                  </span>
+                  <span v-else class="badge bg-light text-secondary border">-</span>
+                </td>
+
+                <td class="fw-bold text-danger">
+                   {{ formatPrice(book.price) }}
+                </td>
+
                 <td>
                   <span v-if="book.stock > 0" class="badge bg-success-subtle text-success rounded-pill border border-success-subtle">
-                    Hiển thị
+                    {{ book.stock }}
                   </span>
                   <span v-else class="badge bg-danger-subtle text-danger rounded-pill border border-danger-subtle">
                     Hết hàng
@@ -159,19 +169,31 @@
                 </div>
 
                 <div class="col-md-4">
-                  <label class="form-label fw-bold text-secondary">Giá gốc (VNĐ)</label>
-                  <input v-model.number="bookForm.originalPrice" type="number" class="form-control" min="0">
+                  <label class="form-label fw-bold text-secondary">Giá gốc (VNĐ) <span class="text-danger">*</span></label>
+                  <input v-model.number="bookForm.originalPrice" @input="calculateSalePrice" type="number" class="form-control" min="0" required>
                 </div>
+                
                 <div class="col-md-4">
-                  <label class="form-label fw-bold text-secondary">Giá bán (VNĐ) <span class="text-danger">*</span></label>
-                  <input v-model.number="bookForm.price" type="number" class="form-control" min="0" required>
+                  <label class="form-label fw-bold text-danger">% Giảm giá</label>
+                  <div class="input-group">
+                    <input v-model.number="discountPercent" @input="calculateSalePrice" type="number" class="form-control text-danger fw-bold" min="0" max="100" placeholder="0">
+                    <span class="input-group-text">%</span>
+                  </div>
                 </div>
+
                 <div class="col-md-4">
+                  <label class="form-label fw-bold text-success">Giá bán ra (Sau giảm)</label>
+                  <input v-model.number="bookForm.price" type="number" class="form-control bg-success-subtle fw-bold text-success" readonly>
+                  <div class="form-text small text-success" v-if="discountPercent > 0">
+                    Đã giảm {{ formatPrice(bookForm.originalPrice - bookForm.price) }}
+                  </div>
+                </div>
+                <div class="col-md-6">
                   <label class="form-label fw-bold text-secondary">Tồn kho</label>
                   <input v-model.number="bookForm.stock" type="number" class="form-control" min="0">
                 </div>
 
-                <div class="col-md-12">
+                <div class="col-md-6">
                   <label class="form-label fw-bold text-secondary">Link hình ảnh (URL)</label>
                   <div class="input-group">
                     <input v-model="bookForm.image" type="text" class="form-control" placeholder="/images/book-1.jpg hoặc https://...">
@@ -179,7 +201,6 @@
                       <img :src="bookForm.image || 'https://placehold.co/40x40'" class="w-100 h-100 object-fit-cover">
                     </span>
                   </div>
-                  <div class="form-text small">Nên dùng ảnh trong thư mục /images/ để tải nhanh hơn.</div>
                 </div>
 
                 <div class="col-md-12">
@@ -201,12 +222,14 @@
     </div>
 
   </div>
+  
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import productService from '@/services/productService';
-import Swal from 'sweetalert2'; // IMPORT THƯ VIỆN ALERT ĐẸP
+import Swal from 'sweetalert2';
+import AdminNav from '@/components/AdminNav.vue';
 
 // --- STATE ---
 const books = ref([]);
@@ -220,37 +243,47 @@ const filterStatus = ref('');
 
 const categories = ['Văn học', 'Kinh tế', 'Công nghệ', 'Kỹ năng sống', 'Thiếu nhi', 'Ngoại ngữ'];
 
+// Dữ liệu Form
 const bookForm = ref({
   title: '', category: 'Văn học', author: '', 
   price: 0, originalPrice: 0, stock: 10, 
   image: '', description: ''
 });
 
+// Biến tạm để tính % giảm giá (Không lưu vào DB, chỉ dùng trên Form)
+const discountPercent = ref(0);
+
+// --- HÀM TÍNH TOÁN GIÁ ---
+const calculateSalePrice = () => {
+  if (bookForm.value.originalPrice > 0) {
+    // Công thức: Giá Bán = Giá Gốc * (100 - %Giảm) / 100
+    const salePrice = bookForm.value.originalPrice * (100 - discountPercent.value) / 100;
+    // Làm tròn
+    bookForm.value.price = Math.round(salePrice);
+  } else {
+    bookForm.value.price = 0;
+  }
+};
+
 // --- COMPUTED ---
 const filteredBooks = computed(() => {
   let result = books.value;
-
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase().trim();
     result = result.filter(b => b.title.toLowerCase().includes(query));
   }
-
   if (filterCategory.value) {
     result = result.filter(b => b.category === filterCategory.value);
   }
-
   if (filterStatus.value === 'available') {
     result = result.filter(b => b.stock > 0);
   } else if (filterStatus.value === 'out_of_stock') {
     result = result.filter(b => b.stock <= 0);
   }
-
   return result;
 });
 
 // --- ACTIONS ---
-
-// 1. Tải dữ liệu
 const loadBooks = async () => {
   isLoading.value = true;
   try {
@@ -272,6 +305,7 @@ const resetFilters = () => {
 const openAddModal = () => {
   isEditing.value = false;
   editingId.value = null;
+  discountPercent.value = 0; // Reset giảm giá
   bookForm.value = { 
     title: '', category: 'Văn học', author: '', 
     price: 0, originalPrice: 0, stock: 10, 
@@ -283,46 +317,36 @@ const openEditModal = (book) => {
   isEditing.value = true;
   editingId.value = book.id;
   bookForm.value = { ...book };
+  
+  // Tính ngược lại % giảm giá để hiển thị lên Form
+  if (book.originalPrice > book.price && book.originalPrice > 0) {
+    discountPercent.value = Math.round((1 - book.price / book.originalPrice) * 100);
+  } else {
+    discountPercent.value = 0;
+  }
 };
 
-// 2. Lưu Dữ Liệu (Dùng Swal)
 const saveBook = async () => {
   try {
     const data = { ...bookForm.value };
-    // Mặc định ảnh nếu trống
     if (!data.image) data.image = '/images/default-book.jpg';
 
     if (isEditing.value) {
       await productService.update(editingId.value, data);
-      Swal.fire({
-        icon: 'success',
-        title: 'Thành công!',
-        text: 'Cập nhật sách thành công.',
-        timer: 1500,
-        showConfirmButton: false
-      });
+      Swal.fire({ icon: 'success', title: 'Cập nhật thành công!', timer: 1500, showConfirmButton: false });
     } else {
       await productService.create(data);
-      Swal.fire({
-        icon: 'success',
-        title: 'Thành công!',
-        text: 'Thêm sách mới thành công.',
-        timer: 1500,
-        showConfirmButton: false
-      });
+      Swal.fire({ icon: 'success', title: 'Thêm mới thành công!', timer: 1500, showConfirmButton: false });
     }
 
-    // Đóng modal
     const closeBtn = document.querySelector('#bookModal .btn-close');
     if(closeBtn) closeBtn.click();
-
     loadBooks(); 
   } catch (e) {
     Swal.fire('Lỗi', e.message, 'error');
   }
 };
 
-// 3. Xóa Dữ Liệu (Dùng Swal Confirm)
 const deleteBook = async (id) => {
   const result = await Swal.fire({
     title: 'Bạn chắc chắn?',
@@ -330,15 +354,13 @@ const deleteBook = async (id) => {
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Vâng, xóa nó!',
-    cancelButtonText: 'Hủy'
+    confirmButtonText: 'Vâng, xóa nó!'
   });
 
   if (result.isConfirmed) {
     try {
       await productService.delete(id);
-      Swal.fire('Đã xóa!', 'Sách đã bị xóa khỏi hệ thống.', 'success');
+      Swal.fire('Đã xóa!', 'Sách đã bị xóa.', 'success');
       loadBooks();
     } catch (e) {
       Swal.fire('Lỗi', e.message, 'error');

@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '../stores/auth' // Import Store để check quyền
+import { useAuthStore } from '../stores/auth' 
+import DashboardView from '../views/admin/DashboardView.vue';
+import UserManageView from '../views/admin/UserManageView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,6 +52,18 @@ const router = createRouter({
       name: 'admin-products', 
       component: () => import('../views/admin/ProductManageView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true } // Đánh dấu cần login + quyền admin
+    },
+    {
+      path: '/admin/dashboard',
+      name: 'admin-dashboard',
+      component: DashboardView,
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: UserManageView,
+      meta: { requiresAuth: true, requiresAdmin: true }
     },
 
     // --- XỬ LÝ 404 (Nếu gõ link linh tinh thì về trang chủ) ---
