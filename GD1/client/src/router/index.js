@@ -1,78 +1,62 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '../stores/auth' 
-import DashboardView from '../views/admin/DashboardView.vue';
-import UserManageView from '../views/admin/UserManageView.vue';
+import { useAuthStore } from '../stores/auth'
+import Swal from 'sweetalert2'; // Import thông báo đẹp
+
+// Các view công khai (Load ngay)
+import HomeView from '../views/HomeView.vue'
+import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
+import ShopView from '../views/ShopView.vue'
+import ProductDetailView from '../views/ProductDetailView.vue'
+import CartView from '../views/CartView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // --- CÁC ROUTE CÔNG KHAI (AI CŨNG VÀO ĐƯỢC) ---
-    { 
-      path: '/', 
-      name: 'home', 
-      component: () => import('../views/HomeView.vue') 
-    },
-    { 
-      path: '/shop', 
-      name: 'shop', 
-      component: () => import('../views/ShopView.vue') 
-    },
-    { 
-      path: '/product/:id', 
-      name: 'detail', 
-      component: () => import('../views/ProductDetailView.vue') 
-    },
-    { 
-      path: '/cart', 
-      name: 'cart', 
-      component: () => import('../views/CartView.vue') 
-    },
-    { 
-      path: '/login', 
-      name: 'login', 
-      component: () => import('../views/LoginView.vue') 
-    },
-    { 
-      path: '/register', 
-      name: 'register', 
-      component: () => import('../views/RegisterView.vue') 
-    },
+    // --- CÁC ROUTE CÔNG KHAI ---
+    { path: '/', name: 'home', component: HomeView },
+    { path: '/shop', name: 'shop', component: ShopView },
+    { path: '/product/:id', name: 'detail', component: ProductDetailView },
+    { path: '/cart', name: 'cart', component: CartView },
+    { path: '/login', name: 'login', component: LoginView },
+    { path: '/register', name: 'register', component: RegisterView },
 
     // --- CÁC ROUTE CẦN ĐĂNG NHẬP (USER & ADMIN) ---
     { 
       path: '/profile', 
       name: 'profile', 
+      // Lazy load: Chỉ tải file này khi người dùng vào trang profile
       component: () => import('../views/ProfileView.vue'),
-      meta: { requiresAuth: true } // Đánh dấu cần login
+      meta: { requiresAuth: true } 
     },
 
-    // --- CÁC ROUTE CẦN QUYỀN ADMIN (CHỈ ADMIN) ---
+    // --- CÁC ROUTE CẦN QUYỀN ADMIN (ADMIN ONLY) ---
     { 
       path: '/admin/products', 
       name: 'admin-products', 
       component: () => import('../views/admin/ProductManageView.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true } // Đánh dấu cần login + quyền admin
+      meta: { requiresAuth: true, requiresAdmin: true } 
     },
     {
       path: '/admin/dashboard',
       name: 'admin-dashboard',
-      component: DashboardView,
+      component: () => import('../views/admin/DashboardView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
       path: '/admin/users',
       name: 'admin-users',
-      component: UserManageView,
+      component: () => import('../views/admin/UserManageView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
     },
 
-    // --- XỬ LÝ 404 (Nếu gõ link linh tinh thì về trang chủ) ---
+    // --- XỬ LÝ 404 ---
     { 
       path: '/:pathMatch(.*)*', 
       redirect: '/' 
     }
   ],
-  // Tự động cuộn lên đầu trang khi chuyển route
+  // Cuộn lên đầu trang khi chuyển trang
   scrollBehavior(to, from, savedPosition) {
     return { top: 0 }
   }
@@ -80,29 +64,45 @@ const router = createRouter({
 
 // --- NAVIGATION GUARD (NGƯỜI GÁC CỔNG) ---
 router.beforeEach(async (to, from, next) => {
-  // Gọi Store (Lưu ý: phải gọi bên trong beforeEach để đảm bảo Pinia đã khởi tạo)
   const authStore = useAuthStore();
 
-  // Kiểm tra các điều kiện từ meta
+  // 1. QUAN TRỌNG: Đảm bảo Firebase đã check xong user trước khi kiểm tra quyền
+  // Nếu chưa đăng nhập (hoặc vừa F5), hãy chờ initAuth chạy xong.
+  if (!authStore.isAuthenticated) {
+     await authStore.initAuth();
+  }
+
+  // Lấy yêu cầu của trang đích
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
 
-  // 1. Nếu route cần đăng nhập mà chưa đăng nhập
+  // 2. Kiểm tra Đăng nhập
   if (requiresAuth && !authStore.isAuthenticated) {
-    alert("Vui lòng đăng nhập để tiếp tục!");
+    // Dùng Swal thay alert cho đẹp
+    Swal.fire({
+      icon: 'info',
+      title: 'Yêu cầu đăng nhập',
+      text: 'Vui lòng đăng nhập để truy cập trang này!',
+      confirmButtonColor: '#C92127'
+    });
     next('/login');
     return;
   }
 
-  // 2. Nếu route cần Admin mà user hiện tại không phải Admin
+  // 3. Kiểm tra Quyền Admin
   if (requiresAdmin && !authStore.isAdmin) {
-    alert("⛔ Bạn không có quyền truy cập trang Quản trị!");
+    Swal.fire({
+      icon: 'error',
+      title: 'Truy cập bị từ chối',
+      text: 'Bạn không có quyền truy cập trang Quản trị!',
+      confirmButtonColor: '#C92127'
+    });
     next('/'); // Đá về trang chủ
     return;
   }
 
-  // 3. Nếu thỏa mãn hết -> Cho qua
+  // 4. Hợp lệ -> Cho qua
   next();
 });
 
-export default router
+export default router;

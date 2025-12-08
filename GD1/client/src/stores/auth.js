@@ -9,12 +9,14 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useRouter } from 'vue-router';
 import { useCartStore } from './cart'; 
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
   const isAuthenticated = ref(false);
   const isAdmin = ref(false);
+  const router = useRouter();
 
   // 1. KHỞI TẠO & KHÔI PHỤC PHIÊN (Chạy khi F5 trang)
   const initAuth = () => {
@@ -37,11 +39,11 @@ export const useAuthStore = defineStore('auth', () => {
 
             // --- KIỂM TRA KHÓA TÀI KHOẢN ---
             if (status === 'locked') {
-              await signOut(auth); // Đá ra ngay
+              await signOut(auth); // Đá ra ngay lập tức
               user.value = null;
               isAuthenticated.value = false;
               isAdmin.value = false;
-              resolve(null);
+              resolve(null); // Kết thúc
               return;
             }
 
@@ -56,7 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
 
           } catch (e) {
             console.error("Lỗi khôi phục session:", e);
-            // Nếu lỗi mạng, vẫn cho user đăng nhập tạm (nhưng ko có quyền admin) để không crash app
+            // Fallback: Vẫn cho đăng nhập user thường nếu lỗi mạng để không crash app
             user.value = currentUser;
             isAuthenticated.value = true;
           }
@@ -77,10 +79,10 @@ export const useAuthStore = defineStore('auth', () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: fullName });
 
-      // Logic: Email admin mặc định
+      // Logic: Email admin mặc định (Hardcode để test)
       const role = email === 'admin@readify.com' ? 'admin' : 'user';
       
-      // Lưu vào Firestore với trạng thái 'active'
+      // Lưu vào Firestore với trạng thái mặc định 'active'
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         email: email,
         displayName: fullName,
@@ -117,7 +119,7 @@ export const useAuthStore = defineStore('auth', () => {
         
         // --- CHẶN NẾU BỊ KHÓA ---
         if (data.status === 'locked') {
-          await signOut(auth);
+          await signOut(auth); // Đăng xuất ngay
           throw new Error('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.');
         }
       }
@@ -151,7 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
       isAuthenticated.value = false;
       isAdmin.value = false;
 
-      // Xóa Giỏ hàng trên máy
+      // Xóa Giỏ hàng trên máy (Để người sau không thấy)
       const cartStore = useCartStore();
       cartStore.clearCart(); 
     } catch (error) {
