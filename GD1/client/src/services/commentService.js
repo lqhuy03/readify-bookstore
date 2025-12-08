@@ -1,34 +1,55 @@
-import { db } from '../firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from "../firebase";
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy, 
+  serverTimestamp 
+} from "firebase/firestore";
 
-const COLLECTION_NAME = 'comments';
+const COLLECTION_NAME = "comments";
 
-export default {
-  // Thêm bình luận mới
-  async addComment(comment) {
+const commentService = {
+  // 1. Thêm bình luận mới
+  async addComment(commentData) {
     try {
-      // Thêm timestamp server để sắp xếp chuẩn
-      const data = { ...comment, createdAt: Timestamp.now() };
-      await addDoc(collection(db, COLLECTION_NAME), data);
-    } catch (e) {
-      console.error("Error adding comment: ", e);
-      throw e;
+      // Dữ liệu cần lưu: bookId, userId, userName, content, rating...
+      const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+        ...commentData,
+        createdAt: serverTimestamp() // Lấy giờ server để sắp xếp chuẩn
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error("Lỗi thêm bình luận:", error);
+      throw error;
     }
   },
 
-  // Lấy bình luận theo ID sách
+  // 2. Lấy danh sách bình luận theo Sách (Sắp xếp mới nhất trước)
   async getCommentsByBookId(bookId) {
     try {
+      // Tạo câu lệnh: Tìm trong 'comments', lấy cái nào có bookId trùng, xếp theo thời gian giảm dần
       const q = query(
         collection(db, COLLECTION_NAME),
         where("bookId", "==", bookId),
-        orderBy("createdAt", "desc") // Mới nhất lên đầu
+        orderBy("createdAt", "desc")
       );
+
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (e) {
-      console.error("Error fetching comments: ", e);
-      return []; // Trả về mảng rỗng nếu lỗi (ví dụ chưa tạo index)
+      
+      // Chuyển đổi dữ liệu về dạng mảng
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error("Lỗi lấy bình luận:", error);
+      // Nếu lỗi do thiếu Index (thường gặp lần đầu), trả về mảng rỗng để không crash app
+      return [];
     }
   }
 };
+
+export default commentService;

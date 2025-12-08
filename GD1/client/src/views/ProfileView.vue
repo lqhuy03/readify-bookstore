@@ -19,7 +19,7 @@
         
         <div class="list-group mt-3 shadow-sm rounded overflow-hidden">
           <button class="list-group-item list-group-item-action active border-0 fw-bold py-3" style="background-color: #C92127;">
-            <i class="bi bi-person-circle me-2"></i> Thông tin tài khoản
+            <i class="bi bi-person-circle me-2"></i> Hồ sơ cá nhân
           </button>
           <button class="list-group-item list-group-item-action border-0 text-secondary py-3 bg-white">
             <i class="bi bi-bag-check me-2"></i> Đơn hàng của tôi
@@ -113,6 +113,7 @@ import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '@/firebase';
+import Swal from 'sweetalert2'; // Import thư viện thông báo đẹp
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -129,16 +130,15 @@ const loadUserData = () => {
   if (authStore.user) {
     displayName.value = authStore.user.displayName || '';
     email.value = authStore.user.email || '';
-    // Số điện thoại lấy từ LocalStorage giả lập (vì Firebase Auth Profile ko có field phone editable dễ dàng)
+    // Số điện thoại lấy từ LocalStorage (giả lập)
     phoneNumber.value = localStorage.getItem('userPhone') || ''; 
     isLoading.value = false;
   } else {
-    // Nếu chưa login mà vào trang này -> Đá về login
     router.push('/login');
   }
 };
 
-// Xử lý cập nhật
+// Xử lý cập nhật thông tin
 const updateInfo = async () => {
   if (!auth.currentUser) return;
   
@@ -152,22 +152,54 @@ const updateInfo = async () => {
     // Lưu sđt giả lập
     localStorage.setItem('userPhone', phoneNumber.value);
 
-    // Cập nhật lại Store để Header hiển thị tên mới ngay lập tức
-    // authStore.user là reactive, nhưng cần gán lại object để trigger
+    // Cập nhật lại Store
     authStore.user = { ...auth.currentUser }; 
 
-    alert("✅ Cập nhật hồ sơ thành công!");
+    // Thông báo thành công đẹp
+    Swal.fire({
+      icon: 'success',
+      title: 'Thành công!',
+      text: 'Thông tin hồ sơ đã được cập nhật.',
+      timer: 1500,
+      showConfirmButton: false
+    });
+
   } catch (e) {
-    alert("Lỗi cập nhật: " + e.message);
+    Swal.fire('Lỗi cập nhật', e.message, 'error');
   } finally {
     isSaving.value = false;
   }
 };
 
-// Đăng xuất
+// Xử lý Đăng xuất
 const handleLogout = async () => {
-  await authStore.logout();
-  router.push('/login');
+  // Hỏi xác nhận trước khi đăng xuất
+  const result = await Swal.fire({
+    title: 'Đăng xuất?',
+    text: "Bạn có chắc chắn muốn đăng xuất không?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#C92127',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Đăng xuất',
+    cancelButtonText: 'Ở lại'
+  });
+
+  if (result.isConfirmed) {
+    await authStore.logout();
+    
+    // Toast thông báo nhỏ
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true
+    });
+    Toast.fire({ icon: 'success', title: 'Đã đăng xuất thành công' });
+
+    router.push('/login');
+  }
 };
 
 // Theo dõi sự thay đổi của user (đề phòng F5)
@@ -176,7 +208,7 @@ watch(() => authStore.user, (newUser) => {
 });
 
 onMounted(() => {
-  // Đợi 1 xíu để Firebase kịp restore session nếu vừa F5
+  // Đợi 1 xíu để Firebase kịp restore session
   setTimeout(() => {
     loadUserData();
   }, 500);

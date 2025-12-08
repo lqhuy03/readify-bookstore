@@ -1,115 +1,114 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { db, auth } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export const useCartStore = defineStore('cart', () => {
   
-  // 1. STATE: Dữ liệu giỏ hàng
-  // Lấy từ LocalStorage để khi F5 không bị mất dữ liệu
+  // 1. STATE
   const items = ref(JSON.parse(localStorage.getItem('cartItems')) || []);
 
-  // 2. GETTERS: Các hàm tính toán tự động
+  // 2. GETTERS
+  const totalItems = computed(() => items.value.reduce((total, item) => total + (item.quantity || 0), 0));
   
-  // Tính tổng số lượng sản phẩm (Hiển thị trên icon đỏ ở Header)
-  const totalItems = computed(() => {
-    return items.value.reduce((total, item) => total + item.quantity, 0);
-  });
+  const totalPrice = computed(() => items.value.reduce((total, item) => {
+    return total + ((Number(item.price) || 0) * (item.quantity || 0));
+  }, 0));
 
-  // Tính tổng thành tiền của cả giỏ hàng
-  const totalPrice = computed(() => {
-    return items.value.reduce((total, item) => total + (item.price * item.quantity), 0);
-  });
-
-  // 3. ACTIONS: Các hành động thay đổi giỏ hàng
-
-  /**
-   * Thêm sản phẩm vào giỏ
-   * @param {Object} product - Thông tin sách
-   * @param {Number} quantity - Số lượng muốn thêm (mặc định 1)
-   */
+  // 3. ACTIONS CƠ BẢN
   const addItem = (product, quantity = 1) => {
     const existingItem = items.value.find(item => item.id === product.id);
-    
     if (existingItem) {
-      // Nếu sách đã có -> Tăng số lượng
       existingItem.quantity += quantity;
     } else {
-      // Nếu chưa có -> Thêm mới vào mảng
       items.value.push({
         id: product.id,
         title: product.title,
-        price: product.price,
-        originalPrice: product.originalPrice, // Lưu giá gốc để hiện gạch ngang
-        image: product.image,
-        author: product.author,               // Lưu tác giả
+        price: Number(product.price) || 0,
+        originalPrice: Number(product.originalPrice) || 0,
+        image: product.image || '',
+        author: product.author || '',
         quantity: quantity
       });
     }
-    saveToLocalStorage();
   };
 
-  /**
-   * Giảm số lượng 1 đơn vị (Dùng cho nút - trong giỏ hàng)
-   */
   const decreaseItem = (productId) => {
-    const existingItem = items.value.find(item => item.id === productId);
-    if (existingItem) {
-      existingItem.quantity--;
-      // Nếu giảm về 0 thì xóa luôn sản phẩm khỏi giỏ
-      if (existingItem.quantity <= 0) {
-        removeItem(productId);
-      } else {
-        saveToLocalStorage();
-      }
+    const item = items.value.find(i => i.id === productId);
+    if (item) {
+      item.quantity--;
+      if (item.quantity <= 0) removeItem(productId);
     }
   };
 
-  /**
-   * Cập nhật số lượng cụ thể (Khi gõ vào ô input)
-   */
   const updateQuantity = (productId, quantity) => {
-    const existingItem = items.value.find(item => item.id === productId);
-    if (existingItem) {
+    const item = items.value.find(i => i.id === productId);
+    if (item) {
       const qty = parseInt(quantity);
-      if (qty > 0) {
-        existingItem.quantity = qty;
-        saveToLocalStorage();
-      } else {
-        // Nếu nhập số <= 0 hoặc không hợp lệ thì reset về 1 hoặc xóa
-        existingItem.quantity = 1; 
-      }
+      item.quantity = qty > 0 ? qty : 1;
     }
-  }
+  };
 
-  /**
-   * Xóa hẳn một sản phẩm khỏi giỏ
-   */
   const removeItem = (productId) => {
     items.value = items.value.filter(item => item.id !== productId);
-    saveToLocalStorage();
   };
 
-  /**
-   * Xóa sạch giỏ hàng (Dùng sau khi Thanh toán thành công)
-   */
   const clearCart = () => {
     items.value = [];
-    saveToLocalStorage();
   };
 
-  // --- HELPER: Lưu vào bộ nhớ trình duyệt ---
+  // --- 4. TÍNH NĂNG MỚI: ĐỒNG BỘ FIREBASE ---
+
+  // Hàm tải giỏ hàng từ Firebase về (Dùng khi Login)
+  const loadCartFromFirestore = async (userId) => {
+    if (!userId) return;
+    try {
+      const docRef = doc(db, 'carts', userId);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        // Nếu trên mạng có giỏ hàng -> Lấy về dùng
+        items.value = docSnap.data().items || [];
+      } else {
+        // Nếu trên mạng chưa có -> Giữ nguyên giỏ hàng hiện tại (nếu có) để lát nữa sync lên
+        console.log("Khách hàng mới, chưa có giỏ hàng cũ.");
+      }
+      saveToLocalStorage();
+    } catch (e) {
+      console.error("Lỗi tải giỏ hàng:", e);
+    }
+  };
+
+  // Hàm lưu giỏ hàng lên Firebase
+  const syncToFirestore = async () => {
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        await setDoc(doc(db, 'carts', user.uid), { 
+          items: items.value,
+          updatedAt: new Date()
+        });
+      } catch (e) {
+        console.error("Lỗi đồng bộ giỏ hàng:", e);
+      }
+    }
+  };
+
+  // Helper: Lưu LocalStorage
   const saveToLocalStorage = () => {
     localStorage.setItem('cartItems', JSON.stringify(items.value));
   };
 
-  // Xuất ra để các Component sử dụng
+  // --- 5. WATCHER: TỰ ĐỘNG LƯU ---
+  // Bất cứ khi nào 'items' thay đổi -> Lưu LocalStorage VÀ Lưu Firebase (nếu đã login)
+  watch(items, () => {
+    saveToLocalStorage();
+    syncToFirestore();
+  }, { deep: true });
+
   return { 
-    items, 
-    totalItems, 
-    totalPrice, 
-    addItem, 
-    decreaseItem, 
-    updateQuantity,
-    removeItem, 
-    clearCart 
+    items, totalItems, totalPrice, 
+    addItem, decreaseItem, updateQuantity, removeItem, clearCart,
+    loadCartFromFirestore 
   };
 });

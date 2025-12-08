@@ -8,71 +8,93 @@
       <div class="col-md-8">
         
         <div v-if="cartStore.items.length === 0" class="bg-white rounded shadow-sm p-5 text-center">
-          <i class="bi bi-cart-x fs-1 text-muted opacity-50"></i>
-          <p class="text-muted mt-3">Giỏ hàng của bạn còn trống.</p>
-          <RouterLink to="/shop" class="btn btn-fahasa mt-2 text-white">Mua sắm ngay</RouterLink>
+          <i class="bi bi-cart-x fs-1 text-muted opacity-50" style="font-size: 4rem;"></i>
+          <p class="text-muted mt-3">Giỏ hàng chưa có sản phẩm nào.</p>
+          <RouterLink to="/shop" class="btn btn-fahasa mt-2 px-4 text-white shadow-sm">
+            Mua sắm ngay
+          </RouterLink>
         </div>
 
-        <div v-else class="bg-white rounded shadow-sm mb-3 p-0 overflow-hidden">
-          <div class="d-flex py-3 px-3 border-bottom fw-bold text-secondary d-none d-md-flex" style="font-size: 14px;">
-            <div style="width: 50%;">Thông tin sản phẩm</div>
-            <div style="width: 20%;" class="text-center">Đơn giá</div>
-            <div style="width: 15%;" class="text-center">Số lượng</div>
-            <div style="width: 15%;" class="text-center">Thành tiền</div>
+        <div v-else class="bg-white rounded shadow-sm mb-3 p-3">
+          
+          <div class="row d-none d-md-flex pb-2 border-bottom fw-bold text-secondary text-uppercase small">
+            <div class="col-md-6">Sản phẩm</div>
+            <div class="col-md-2 text-center">Đơn giá</div>
+            <div class="col-md-2 text-center">Số lượng</div>
+            <div class="col-md-2 text-end">Thành tiền</div>
           </div>
 
-          <div v-for="item in cartStore.items" :key="item.id" class="d-flex flex-column flex-md-row py-3 px-3 border-bottom align-items-center position-relative hover-bg">
+          <div v-for="item in cartStore.items" :key="item.id" 
+               class="row align-items-center py-3 border-bottom">
             
-            <div class="d-flex gap-3 col-md-6 w-100 w-md-50 align-items-start">
-              <img :src="item.image || 'https://placehold.co/80x100'" width="80" height="100" class="border rounded object-fit-cover flex-shrink-0">
-              <div class="flex-grow-1">
-                <p class="mb-1 fw-bold text-dark text-truncate-2">{{ item.title }}</p>
-                <small class="text-muted d-block mb-1">{{ item.author || 'Đang cập nhật' }}</small>
+            <div class="col-12 col-md-6 mb-3 mb-md-0">
+              <div class="d-flex gap-3 align-items-start">
+                <img :src="item.image || 'https://placehold.co/80x100?text=No+Img'" 
+                     width="70" height="90" 
+                     class="border rounded object-fit-cover flex-shrink-0"
+                     @error="$event.target.src='https://placehold.co/80x100?text=Error'">
                 
-                <div class="d-md-none text-danger fw-bold mb-2">{{ formatPrice(item.price) }}</div>
-                
-                <button @click="confirmRemove(item.id)" class="btn btn-link text-danger text-decoration-none small p-0 border-0">
-                  <i class="bi bi-trash"></i> Xóa
-                </button>
+                <div class="flex-grow-1">
+                  <p class="mb-1 fw-bold text-dark text-truncate-2 lh-sm" :title="item.title">
+                    {{ item.title }}
+                  </p>
+                  <small class="text-muted d-block mb-1">{{ item.author || 'Tác giả đang cập nhật' }}</small>
+                  
+                  <div class="d-md-none text-danger fw-bold mb-1">
+                    {{ formatPrice(item.price) }}
+                  </div>
+                  
+                  <button @click="confirmRemove(item.id)" class="btn btn-link text-danger text-decoration-none small p-0 border-0">
+                    <i class="bi bi-trash"></i> Xóa
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="d-none d-md-block text-center fw-bold" style="width: 20%;">
-              {{ formatPrice(item.price) }}
+            <div class="d-none d-md-block col-md-2 text-center fw-bold text-dark">
+              <div>{{ formatPrice(item.price) }}</div>
               <div v-if="item.originalPrice > item.price" class="text-decoration-line-through text-muted small fw-normal">
                 {{ formatPrice(item.originalPrice) }}
               </div>
             </div>
 
-            <div class="my-3 my-md-0 text-center" style="width: 15%;">
-              <div class="input-group input-group-sm mx-auto" style="width: 100px;">
+            <div class="col-6 col-md-2">
+              <div class="input-group input-group-sm">
                 <button class="btn btn-outline-secondary" @click="cartStore.decreaseItem(item.id)">-</button>
-                <input type="text" class="form-control text-center bg-white" :value="item.quantity" readonly>
+                <input type="number" class="form-control text-center bg-white px-1" 
+                       :value="item.quantity" 
+                       @change="cartStore.updateQuantity(item.id, $event.target.value)"
+                       min="1">
                 <button class="btn btn-outline-secondary" @click="cartStore.addItem(item)">+</button>
               </div>
             </div>
 
-            <div class="text-center fw-bold text-danger fs-5" style="width: 15%;">
-              {{ formatPrice(item.price * item.quantity) }}
+            <div class="col-6 col-md-2 text-end fw-bold text-danger fs-6">
+              {{ formatPrice(Number(item.price) * Number(item.quantity)) }}
             </div>
           </div>
         </div>
 
-        <RouterLink to="/shop" class="text-decoration-none text-danger fw-bold d-inline-block mt-2 mb-4">
-          <i class="bi bi-arrow-left"></i> Tiếp tục xem sản phẩm
-        </RouterLink>
+        <div v-if="cartStore.items.length > 0">
+          <RouterLink to="/shop" class="text-decoration-none text-danger fw-bold d-inline-flex align-items-center mt-2 mb-4 hover-underline">
+            <i class="bi bi-arrow-left me-1"></i> Tiếp tục xem sản phẩm
+          </RouterLink>
+        </div>
       </div>
 
       <div class="col-md-4" v-if="cartStore.items.length > 0">
-        <div class="bg-white rounded shadow-sm position-sticky p-3" style="top: 90px;">
+        <div class="bg-white rounded shadow-sm position-sticky p-4 border" style="top: 90px; z-index: 10;">
+          
           <div class="d-flex justify-content-between mb-2">
             <span class="text-secondary">Tạm tính:</span>
             <span class="fw-bold">{{ formatPrice(cartStore.totalPrice) }}</span>
           </div>
+          
           <div class="d-flex justify-content-between mb-3">
             <span class="text-secondary">Phí vận chuyển:</span>
             <span class="text-success fw-bold">Miễn phí</span>
           </div>
+          
           <div class="d-flex justify-content-between mb-4 pb-3 border-bottom align-items-end">
             <span class="fw-bold text-secondary">Tổng tiền:</span>
             <div class="text-end">
@@ -87,10 +109,11 @@
           </button>
           
           <div class="mt-3 text-center">
-             <img src="https://cdn0.fahasa.com/skin/frontend/ma_vanese/fahasa/images/payment_icon.png" class="img-fluid" style="opacity: 0.7;">
+             <img src="https://cdn0.fahasa.com/skin/frontend/ma_vanese/fahasa/images/payment_icon.png" class="img-fluid" style="opacity: 0.8; max-width: 80%;">
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -102,7 +125,7 @@ import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import Swal from 'sweetalert2'; // Import thư viện thông báo đẹp
+import Swal from 'sweetalert2'; 
 
 // 1. Khởi tạo
 const cartStore = useCartStore();
@@ -110,37 +133,35 @@ const authStore = useAuthStore();
 const router = useRouter();
 const isProcessing = ref(false);
 
-// 2. Format Tiền
+// 2. Format Tiền (Xử lý an toàn)
 const formatPrice = (price) => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  if (price === undefined || price === null || isNaN(price)) return '0 đ';
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(price));
 };
 
-// 3. Xác nhận xóa (UX tốt hơn xóa ngay)
+// 3. Xác nhận xóa
 const confirmRemove = (id) => {
   Swal.fire({
     title: 'Xóa sản phẩm?',
-    text: "Bạn có chắc muốn bỏ sản phẩm này khỏi giỏ hàng?",
+    text: "Bạn có chắc muốn bỏ sản phẩm này?",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
     confirmButtonText: 'Xóa',
     cancelButtonText: 'Hủy'
   }).then((result) => {
     if (result.isConfirmed) {
       cartStore.removeItem(id);
-      // Swal.fire('Đã xóa!', 'Sản phẩm đã được xóa khỏi giỏ.', 'success');
     }
   });
 };
 
-// 4. Xử lý Thanh toán (Checkout)
+// 4. Xử lý Thanh toán
 const handleCheckout = async () => {
-  // Kiểm tra đăng nhập
   if (!authStore.isAuthenticated) {
     const result = await Swal.fire({
       title: 'Bạn chưa đăng nhập',
-      text: "Vui lòng đăng nhập để tích điểm và theo dõi đơn hàng.",
+      text: "Vui lòng đăng nhập để thanh toán.",
       icon: 'info',
       showCancelButton: true,
       confirmButtonColor: '#C92127',
@@ -157,36 +178,31 @@ const handleCheckout = async () => {
   isProcessing.value = true;
 
   try {
-    // Tạo dữ liệu đơn hàng
     const orderData = {
       userId: authStore.user.uid,
       customerName: authStore.user.displayName || authStore.user.email,
       email: authStore.user.email,
-      items: cartStore.items, // Lưu danh sách sản phẩm
+      items: cartStore.items, 
       totalPrice: cartStore.totalPrice,
-      status: 'Pending', // Trạng thái chờ xử lý
+      status: 'Pending', 
       createdAt: serverTimestamp()
     };
 
-    // Lưu vào Firestore
     await addDoc(collection(db, 'orders'), orderData);
-
-    // Xóa giỏ hàng
     cartStore.clearCart();
 
-    // Thông báo thành công
     await Swal.fire({
       icon: 'success',
       title: 'Đặt hàng thành công!',
-      text: 'Cảm ơn bạn đã mua sắm tại Readify. Chúng tôi sẽ liên hệ sớm nhất.',
+      text: 'Cảm ơn bạn đã mua sắm tại Readify.',
       confirmButtonColor: '#C92127'
     });
 
-    router.push('/'); // Về trang chủ
+    router.push('/'); 
     
   } catch (e) {
     console.error(e);
-    Swal.fire('Lỗi thanh toán', e.message, 'error');
+    Swal.fire('Lỗi thanh toán', 'Có lỗi xảy ra, vui lòng thử lại sau.', 'error');
   } finally {
     isProcessing.value = false;
   }
@@ -200,9 +216,11 @@ const handleCheckout = async () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.bg-white-rounded {
-  background-color: white;
-  border-radius: 8px;
+.object-fit-cover {
+  object-fit: cover;
+}
+.hover-bg:hover {
+  background-color: #f9f9f9;
 }
 .btn-fahasa {
   background-color: #C92127;
@@ -214,10 +232,8 @@ const handleCheckout = async () => {
   background-color: #a81a1f;
   transform: translateY(-1px);
 }
-.object-fit-cover {
-  object-fit: cover;
-}
-.hover-bg:hover {
-  background-color: #f8f9fa;
+.btn-fahasa:disabled {
+  background-color: #e68a8d;
+  cursor: not-allowed;
 }
 </style>

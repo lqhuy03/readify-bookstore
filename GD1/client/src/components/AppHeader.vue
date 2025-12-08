@@ -13,6 +13,7 @@ const cartStore = useCartStore();
 const user = computed(() => authStore.user);
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const cartCount = computed(() => cartStore.totalItems);
+const isAdmin = computed(() => authStore.isAdmin);
 
 // 3. Xử lý Đăng xuất
 const handleLogout = async () => {
@@ -74,7 +75,7 @@ const handleLogout = async () => {
                     <i class="bi bi-person me-2"></i> Hồ sơ cá nhân
                   </RouterLink>
                 </li>
-                <li>
+                <li v-if="isAdmin">
                   <RouterLink class="dropdown-item" to="/admin/products">
                     <i class="bi bi-speedometer2 me-2"></i> Quản trị Website
                   </RouterLink>

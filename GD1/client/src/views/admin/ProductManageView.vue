@@ -35,7 +35,7 @@
         </div>
 
         <div class="col-md-2 text-end">
-           <button @click="resetFilters" class="btn btn-outline-secondary w-100" title="Xóa bộ lọc">
+           <button @click="resetFilters" class="btn btn-outline-secondary w-100" title="Tải lại dữ liệu">
              <i class="bi bi-arrow-clockwise"></i> Làm mới
            </button>
         </div>
@@ -66,6 +66,7 @@
                 <td colspan="6" class="text-center py-5">
                   <i class="bi bi-search fs-1 text-muted opacity-50"></i>
                   <p class="text-muted mt-2">Không tìm thấy sản phẩm nào phù hợp.</p>
+                  <button class="btn btn-sm btn-link text-decoration-none" @click="resetFilters">Xóa bộ lọc</button>
                 </td>
               </tr>
 
@@ -175,9 +176,7 @@
                   <div class="input-group">
                     <input v-model="bookForm.image" type="text" class="form-control" placeholder="/images/book-1.jpg hoặc https://...">
                     <span class="input-group-text p-0 overflow-hidden" style="width: 40px;">
-                      <img :src="bookForm.image || 'https://placehold.co/40x40'" 
-                           class="w-100 h-100 object-fit-cover"
-                           @error="$event.target.src='https://placehold.co/40x40?text=Error'">
+                      <img :src="bookForm.image || 'https://placehold.co/40x40'" class="w-100 h-100 object-fit-cover">
                     </span>
                   </div>
                   <div class="form-text small">Nên dùng ảnh trong thư mục /images/ để tải nhanh hơn.</div>
@@ -207,6 +206,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import productService from '@/services/productService';
+import Swal from 'sweetalert2'; // IMPORT THƯ VIỆN ALERT ĐẸP
 
 // --- STATE ---
 const books = ref([]);
@@ -214,37 +214,31 @@ const isLoading = ref(false);
 const isEditing = ref(false);
 const editingId = ref(null);
 
-// Các biến lọc
 const searchQuery = ref('');
 const filterCategory = ref('');
 const filterStatus = ref('');
 
-// Danh sách danh mục cố định (để đồng bộ với Select)
 const categories = ['Văn học', 'Kinh tế', 'Công nghệ', 'Kỹ năng sống', 'Thiếu nhi', 'Ngoại ngữ'];
 
-// Dữ liệu Form
 const bookForm = ref({
   title: '', category: 'Văn học', author: '', 
   price: 0, originalPrice: 0, stock: 10, 
   image: '', description: ''
 });
 
-// --- COMPUTED: BỘ LỌC THÔNG MINH ---
+// --- COMPUTED ---
 const filteredBooks = computed(() => {
   let result = books.value;
 
-  // 1. Lọc theo Tên (Search) - Case insensitive
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase().trim();
     result = result.filter(b => b.title.toLowerCase().includes(query));
   }
 
-  // 2. Lọc theo Danh mục
   if (filterCategory.value) {
     result = result.filter(b => b.category === filterCategory.value);
   }
 
-  // 3. Lọc theo Trạng thái
   if (filterStatus.value === 'available') {
     result = result.filter(b => b.stock > 0);
   } else if (filterStatus.value === 'out_of_stock') {
@@ -262,21 +256,19 @@ const loadBooks = async () => {
   try {
     books.value = await productService.getAll();
   } catch (e) {
-    alert("Lỗi kết nối: " + e.message);
+    Swal.fire('Lỗi', 'Không thể tải dữ liệu: ' + e.message, 'error');
   } finally {
     isLoading.value = false;
   }
 };
 
-// 2. Reset bộ lọc
 const resetFilters = () => {
   searchQuery.value = '';
   filterCategory.value = '';
   filterStatus.value = '';
-  loadBooks(); // Reload lại cho chắc
+  loadBooks();
 };
 
-// 3. Chuẩn bị Form Thêm Mới
 const openAddModal = () => {
   isEditing.value = false;
   editingId.value = null;
@@ -287,58 +279,78 @@ const openAddModal = () => {
   };
 };
 
-// 4. Chuẩn bị Form Sửa
 const openEditModal = (book) => {
   isEditing.value = true;
   editingId.value = book.id;
-  bookForm.value = { ...book }; // Copy dữ liệu để không sửa trực tiếp vào bảng khi chưa lưu
+  bookForm.value = { ...book };
 };
 
-// 5. Xử lý Lưu (Submit)
+// 2. Lưu Dữ Liệu (Dùng Swal)
 const saveBook = async () => {
   try {
     const data = { ...bookForm.value };
-    // Ảnh mặc định nếu để trống
+    // Mặc định ảnh nếu trống
     if (!data.image) data.image = '/images/default-book.jpg';
 
     if (isEditing.value) {
       await productService.update(editingId.value, data);
-      alert("Cập nhật thành công!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Cập nhật sách thành công.',
+        timer: 1500,
+        showConfirmButton: false
+      });
     } else {
       await productService.create(data);
-      alert("Thêm mới thành công!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Thêm sách mới thành công.',
+        timer: 1500,
+        showConfirmButton: false
+      });
     }
 
-    // Đóng modal bằng JS thuần (vì không dùng bootstrap-vue)
+    // Đóng modal
     const closeBtn = document.querySelector('#bookModal .btn-close');
     if(closeBtn) closeBtn.click();
 
-    loadBooks(); // Tải lại dữ liệu mới nhất
+    loadBooks(); 
   } catch (e) {
-    alert("Lỗi lưu dữ liệu: " + e.message);
+    Swal.fire('Lỗi', e.message, 'error');
   }
 };
 
-// 6. Xóa sách
+// 3. Xóa Dữ Liệu (Dùng Swal Confirm)
 const deleteBook = async (id) => {
-  if (confirm("Bạn có chắc chắn muốn xóa vĩnh viễn sách này?")) {
+  const result = await Swal.fire({
+    title: 'Bạn chắc chắn?',
+    text: "Hành động này không thể hoàn tác!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Vâng, xóa nó!',
+    cancelButtonText: 'Hủy'
+  });
+
+  if (result.isConfirmed) {
     try {
       await productService.delete(id);
-      // Xóa nóng trên giao diện để không cần load lại API (Tối ưu UX)
-      books.value = books.value.filter(b => b.id !== id);
+      Swal.fire('Đã xóa!', 'Sách đã bị xóa khỏi hệ thống.', 'success');
+      loadBooks();
     } catch (e) {
-      alert("Lỗi xóa: " + e.message);
+      Swal.fire('Lỗi', e.message, 'error');
     }
   }
 };
 
-// Helper Format Tiền
 const formatPrice = (price) => {
   if (price === undefined || price === null) return '0 đ';
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 };
 
-// --- LIFECYCLE ---
 onMounted(loadBooks);
 </script>
 
@@ -351,5 +363,8 @@ onMounted(loadBooks);
 .btn-fahasa:hover {
   background-color: #a81a1f;
   transform: translateY(-1px);
+}
+.object-fit-cover {
+  object-fit: cover;
 }
 </style>
