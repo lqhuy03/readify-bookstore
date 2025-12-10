@@ -52,15 +52,24 @@
           </div>
           <button type="submit" class="btn btn-primary">Đăng ký</button>
         </form>
+        <div v-if="error" class="alert alert-danger mt-3">{{ error }}</div>
+        <div v-if="success" class="alert alert-success mt-3">{{ success }}</div>
       </div>
 
-      <div class="col-md-6" v-if="isRegistered">
-        <h3>Thông tin đã đăng ký:</h3>
-        <p><strong>Họ tên:</strong> {{ info.name }}</p>
-        <p><strong>Email:</strong> {{ info.email }}</p>
-        <p><strong>Ngày sinh:</strong> {{ info.dob }}</p>
-        <p><strong>Giới tính:</strong> {{ info.gender }}</p>
-        <p><strong>Ngôn ngữ:</strong> {{ info.languages.join(', ') }}</p>
+      <div class="col-md-6">
+        <h3>Danh sách người dùng đã đăng ký ({{ users.length }})</h3>
+        <div v-if="users.length === 0" class="alert alert-info">Chưa có người dùng nào</div>
+        <div v-else>
+          <div v-for="(user, index) in users" :key="index" class="card mb-3">
+            <div class="card-body">
+              <p><strong>Họ tên:</strong> {{ user.name }}</p>
+              <p><strong>Email:</strong> {{ user.email }}</p>
+              <p><strong>Ngày sinh:</strong> {{ user.dob }}</p>
+              <p><strong>Giới tính:</strong> {{ user.gender }}</p>
+              <p><strong>Ngôn ngữ:</strong> {{ user.languages.join(', ') }}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -68,8 +77,12 @@
 
 <script setup>
 import { reactive, ref } from 'vue';
+import { useUsers } from '../composables/useUsers';
 
-const isRegistered = ref(false);
+const { users, addUser, findUserByEmail } = useUsers();
+
+const error = ref('');
+const success = ref('');
 const info = reactive({
   name: '',
   email: '',
@@ -80,6 +93,39 @@ const info = reactive({
 });
 
 const register = () => {
-  isRegistered.value = true;
+  error.value = '';
+  success.value = '';
+
+  // Validation
+  if (!info.name || !info.email || !info.password || !info.dob) {
+    error.value = 'Vui lòng điền đầy đủ thông tin!';
+    return;
+  }
+
+  // Kiểm tra email đã tồn tại
+  if (findUserByEmail(info.email)) {
+    error.value = 'Email đã được đăng ký!';
+    return;
+  }
+
+  // Thêm user vào array (bao gồm cả password)
+  addUser({
+    name: info.name,
+    email: info.email,
+    password: info.password,
+    dob: info.dob,
+    gender: info.gender,
+    languages: [...info.languages]
+  });
+
+  success.value = 'Đăng ký thành công! Bạn có thể đăng nhập ở Bài 4.';
+
+  // Reset form
+  info.name = '';
+  info.email = '';
+  info.password = '';
+  info.dob = '';
+  info.gender = 'Nam';
+  info.languages = [];
 };
 </script>

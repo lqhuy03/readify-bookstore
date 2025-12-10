@@ -4,7 +4,7 @@
     
     <LoginComponent v-if="!isLoggedIn" @loggedIn="handleLoginSuccess" />
     
-    <CommentComponent v-else :username="loggedInUser" />
+    <CommentComponent v-else :username="loggedInUser" @logout="handleLogout" />
   </div>
 </template>
 
@@ -16,9 +16,13 @@ import CommentComponent from './CommentComponent.vue';
 const isLoggedIn = ref(false);
 const loggedInUser = ref('');
 
-// Hàm xử lý khi nhận được sự kiện 'loggedIn' từ con
 function handleLoginSuccess(username) {
   loggedInUser.value = username;
   isLoggedIn.value = true;
+}
+
+function handleLogout() {
+  isLoggedIn.value = false;
+  loggedInUser.value = '';
 }
 </script>
