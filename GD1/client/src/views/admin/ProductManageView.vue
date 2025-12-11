@@ -250,6 +250,9 @@ const bookForm = ref({
   image: '', description: ''
 });
 
+
+const guestName = ref('');
+
 // Biến tạm để tính % giảm giá (Không lưu vào DB, chỉ dùng trên Form)
 const discountPercent = ref(0);
 

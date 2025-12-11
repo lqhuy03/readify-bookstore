@@ -2,6 +2,7 @@
   <div class="container mt-4 mb-5">
     <div v-if="isLoading" class="text-center py-5">
       <div class="spinner-border text-danger" role="status"></div>
+      <p class="text-muted mt-2">Đang tải thông tin...</p>
     </div>
 
     <div v-else class="row">
@@ -58,7 +59,7 @@
               <div class="row mb-3 align-items-center">
                 <label class="col-md-3 text-secondary fw-bold text-md-end">Họ và Tên</label>
                 <div class="col-md-9">
-                  <input v-model="displayName" type="text" class="form-control" required>
+                  <input v-model="displayName" type="text" class="form-control" required placeholder="Nhập họ tên của bạn">
                 </div>
               </div>
 
@@ -74,16 +75,16 @@
                 <div class="col-md-9">
                   <div class="d-flex gap-4">
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="gender" id="male" checked>
-                      <label class="form-check-label" for="male">Nam</label>
+                      <input class="form-check-input cursor-pointer" type="radio" name="gender" id="male" value="Nam" v-model="gender">
+                      <label class="form-check-label cursor-pointer" for="male">Nam</label>
                     </div>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="gender" id="female">
-                      <label class="form-check-label" for="female">Nữ</label>
+                      <input class="form-check-input cursor-pointer" type="radio" name="gender" id="female" value="Nữ" v-model="gender">
+                      <label class="form-check-label cursor-pointer" for="female">Nữ</label>
                     </div>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="gender" id="other">
-                      <label class="form-check-label" for="other">Khác</label>
+                      <input class="form-check-input cursor-pointer" type="radio" name="gender" id="other" value="Khác" v-model="gender">
+                      <label class="form-check-label cursor-pointer" for="other">Khác</label>
                     </div>
                   </div>
                 </div>
@@ -112,8 +113,9 @@ import { ref, onMounted, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 import { updateProfile } from 'firebase/auth';
-import { auth } from '@/firebase';
-import Swal from 'sweetalert2'; // Import thư viện thông báo đẹp
+import { auth, db } from '@/firebase'; // Import thêm db
+import { doc, getDoc, updateDoc } from 'firebase/firestore'; // Import Firestore functions
+import Swal from 'sweetalert2';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -122,58 +124,81 @@ const router = useRouter();
 const displayName = ref('');
 const email = ref('');
 const phoneNumber = ref('');
+const gender = ref('Nam'); // Mặc định
 const isLoading = ref(true);
 const isSaving = ref(false);
 
-// Hàm load dữ liệu từ Store vào Form
-const loadUserData = () => {
+// 1. TẢI DỮ LIỆU (TỪ AUTH VÀ FIRESTORE)
+const loadUserData = async () => {
   if (authStore.user) {
+    // Lấy thông tin cơ bản từ Auth
     displayName.value = authStore.user.displayName || '';
     email.value = authStore.user.email || '';
-    // Số điện thoại lấy từ LocalStorage (giả lập)
-    phoneNumber.value = localStorage.getItem('userPhone') || ''; 
-    isLoading.value = false;
+
+    try {
+      // Lấy thông tin chi tiết từ Firestore (SĐT, Giới tính)
+      const userRef = doc(db, 'users', authStore.user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        phoneNumber.value = data.phoneNumber || ''; // Lấy SĐT từ DB
+        gender.value = data.gender || 'Nam';       // Lấy Giới tính từ DB
+      }
+    } catch (e) {
+      console.error("Lỗi tải thông tin chi tiết:", e);
+    } finally {
+      isLoading.value = false;
+    }
   } else {
+    // Chưa đăng nhập -> Đá về Login
     router.push('/login');
   }
 };
 
-// Xử lý cập nhật thông tin
+// 2. CẬP NHẬT THÔNG TIN
 const updateInfo = async () => {
   if (!auth.currentUser) return;
   
   isSaving.value = true;
   try {
-    // Cập nhật tên trên Firebase Auth
+    // A. Cập nhật DisplayName trên Firebase Auth (Để hiện trên Header)
     await updateProfile(auth.currentUser, {
       displayName: displayName.value
     });
     
-    // Lưu sđt giả lập
-    localStorage.setItem('userPhone', phoneNumber.value);
+    // B. Cập nhật Firestore (SĐT, Giới tính, Tên)
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    await updateDoc(userRef, {
+      displayName: displayName.value,
+      phoneNumber: phoneNumber.value,
+      gender: gender.value,
+      updatedAt: new Date()
+    });
 
-    // Cập nhật lại Store
+    // C. Cập nhật lại Store để Header phản hồi ngay lập tức
     authStore.user = { ...auth.currentUser }; 
 
-    // Thông báo thành công đẹp
+    // Thông báo thành công
     Swal.fire({
       icon: 'success',
       title: 'Thành công!',
-      text: 'Thông tin hồ sơ đã được cập nhật.',
+      text: 'Hồ sơ của bạn đã được cập nhật.',
       timer: 1500,
-      showConfirmButton: false
+      showConfirmButton: false,
+      confirmButtonColor: '#C92127'
     });
 
   } catch (e) {
-    Swal.fire('Lỗi cập nhật', e.message, 'error');
+    console.error(e);
+    Swal.fire('Lỗi cập nhật', 'Đã có lỗi xảy ra, vui lòng thử lại.', 'error');
   } finally {
     isSaving.value = false;
   }
 };
 
-// Xử lý Đăng xuất
+// 3. ĐĂNG XUẤT
 const handleLogout = async () => {
-  // Hỏi xác nhận trước khi đăng xuất
   const result = await Swal.fire({
     title: 'Đăng xuất?',
     text: "Bạn có chắc chắn muốn đăng xuất không?",
@@ -188,7 +213,6 @@ const handleLogout = async () => {
   if (result.isConfirmed) {
     await authStore.logout();
     
-    // Toast thông báo nhỏ
     const Toast = Swal.mixin({
       toast: true,
       position: 'top-end',
@@ -202,16 +226,19 @@ const handleLogout = async () => {
   }
 };
 
-// Theo dõi sự thay đổi của user (đề phòng F5)
+// Watcher: Nếu user thay đổi (VD: F5 trang web và Auth load chậm)
 watch(() => authStore.user, (newUser) => {
   if (newUser) loadUserData();
 });
 
 onMounted(() => {
-  // Đợi 1 xíu để Firebase kịp restore session
-  setTimeout(() => {
-    loadUserData();
-  }, 500);
+  // Chờ 1 chút để Auth init xong
+  if(authStore.isAuthenticated) {
+      loadUserData();
+  } else {
+      // Nếu chưa có user ngay, đợi watch xử lý hoặc gọi initAuth
+      setTimeout(() => loadUserData(), 500); 
+  }
 });
 </script>
 
@@ -224,5 +251,8 @@ onMounted(() => {
 .btn-fahasa:hover {
   background-color: #a81a1f;
   transform: translateY(-1px);
+}
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>
