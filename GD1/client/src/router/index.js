@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import Swal from 'sweetalert2'; // Import thông báo đẹp
+import Swal from 'sweetalert2'; 
 
 // Các view công khai (Load ngay)
 import HomeView from '../views/HomeView.vue'

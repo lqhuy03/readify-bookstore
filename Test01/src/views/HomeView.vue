@@ -141,7 +141,9 @@ const filterSalary = ref('all');
 
 const filteredJobs = computed(() => {
   return jobs.value.filter(job => {
-    const matchName = job.title.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const matchName = job.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+    job.skills.toLowerCase().includes(searchQuery.value.toLowerCase()) || searchQuery.value === '' ||
+    job.salary.toString().includes(searchQuery.value);
     
     let matchSalary = true;
     if (filterSalary.value === 'low') matchSalary = job.salary < 2000;

@@ -18,7 +18,6 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = ref(false);
   const router = useRouter();
 
-  // 1. KHỞI TẠO & KHÔI PHỤC PHIÊN (Chạy khi F5 trang)
   const initAuth = () => {
     return new Promise((resolve) => {
       onAuthStateChanged(auth, async (currentUser) => {
